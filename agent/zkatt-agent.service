@@ -1,0 +1,19 @@
+[Unit]
+Description=ZK Attendance pull agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/zkatt-agent
+Environment="ZKATT_DEVICE_IP=192.168.100.111"
+Environment="ZKATT_DEVICE_PASSWORD=0"
+Environment="ZKATT_SERVER=http://YOUR-SERVER:8000"
+Environment="ZKATT_KEY=PASTE-INGEST-KEY-FROM-SETTINGS"
+ExecStart=/usr/bin/python3 /home/pi/zkatt-agent/pull_agent.py
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

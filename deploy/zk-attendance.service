@@ -1,0 +1,16 @@
+[Unit]
+Description=ZK Attendance Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/zk-attendance
+Environment="ZKATT_DB=/opt/zk-attendance/data/attendance.db"
+Environment="PATH=/opt/zk-attendance/.venv/bin:/usr/bin:/bin"
+ExecStart=/opt/zk-attendance/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

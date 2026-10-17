@@ -1,0 +1,14 @@
+# Render blueprint — free web service, no credit card required.
+# Database lives in Neon (free Postgres): create it at neon.tech, then set
+# DATABASE_URL below in the Render dashboard (Environment tab) after deploy,
+# or fill it in when Render prompts during blueprint creation.
+services:
+  - type: web
+    name: zk-attendance
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false

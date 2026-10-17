@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZK Attendance Dashboard</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- ============ AUTH SCREENS ============ -->
+<div id="auth-screen" class="auth-wrap hidden">
+  <div class="auth-card">
+    <div class="brand-mark">✓</div>
+    <h1 id="auth-title">Attendance Dashboard</h1>
+    <p class="muted" id="auth-sub">Sign in to continue</p>
+    <div id="setup-fields" class="hidden">
+      <label>Choose an admin password
+        <input type="password" id="setup-pass" placeholder="At least 4 characters" autocomplete="new-password">
+      </label>
+      <label>Confirm password
+        <input type="password" id="setup-pass2" placeholder="Repeat the password" autocomplete="new-password">
+      </label>
+    </div>
+    <div id="login-fields">
+      <label>Password
+        <input type="password" id="login-pass" placeholder="Admin password" autocomplete="current-password">
+      </label>
+    </div>
+    <p class="error hidden" id="auth-error"></p>
+    <button class="btn primary big" id="auth-go">Sign in</button>
+    <p class="muted small" id="auth-hint"></p>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hidden">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark sm">✓</div>
+      <div>
+        <div class="brand-name" id="hdr-institute">Attendance</div>
+        <div class="brand-sub">Biometric Attendance · <span id="hdr-date"></span></div>
+      </div>
+    </div>
+    <nav class="tabs">
+      <button class="tab active" data-tab="today">Today</button>
+      <button class="tab" data-tab="daily">Daily</button>
+      <button class="tab" data-tab="monthly">Monthly Register</button>
+      <button class="tab" data-tab="staff">Staff</button>
+      <button class="tab" data-tab="settings">Settings</button>
+    </nav>
+    <button class="btn ghost" id="logout">Sign out</button>
+  </header>
+
+  <main>
+    <!-- TODAY -->
+    <section id="tab-today" class="tabpage">
+      <div class="cards" id="today-cards"></div>
+      <div class="two-col">
+        <div class="panel">
+          <h2>Live punch feed <span class="muted small">— today</span></h2>
+          <div id="feed" class="feed"></div>
+        </div>
+        <div>
+          <div class="panel">
+            <h2>Device</h2>
+            <div id="device-box"></div>
+          </div>
+          <div class="panel warn hidden" id="unmapped-panel">
+            <h2>⚠ Unmapped fingerprints</h2>
+            <p class="muted small">These PINs punched today but are not assigned to any staff member. Assign them in the Staff tab.</p>
+            <div id="unmapped-list"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DAILY -->
+    <section id="tab-daily" class="tabpage hidden">
+      <div class="toolbar">
+        <input type="date" id="daily-date">
+        <span class="muted" id="daily-meta"></span>
+        <span class="spacer"></span>
+        <button class="btn" id="daily-csv">Download Excel (CSV)</button>
+        <button class="btn" onclick="window.print()">Print</button>
+      </div>
+      <div class="cards small" id="daily-cards"></div>
+      <div class="panel">
+        <table class="tbl" id="daily-table">
+          <thead><tr><th>Name</th><th>PIN</th><th>Dept</th><th>Status</th><th>In</th><th>Out</th><th>Late</th><th>Early leave</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- MONTHLY -->
+    <section id="tab-monthly" class="tabpage hidden">
+      <div class="toolbar">
+        <input type="month" id="monthly-month">
+        <span class="legend">
+          <span class="lg p">P Present</span><span class="lg l">L Late</span><span class="lg e">E Early leave</span><span class="lg a">A Absent</span><span class="lg lv">LV Leave</span><span class="lg h">H Holiday</span><span class="lg w">W Weekly off</span>
+        </span>
+        <span class="spacer"></span>
+        <button class="btn" id="monthly-csv">Download Excel (CSV)</button>
+        <button class="btn" onclick="window.print()">Print</button>
+      </div>
+      <div class="panel scroll-x">
+        <table class="tbl register" id="register-table">
+          <thead></thead><tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- STAFF -->
+    <section id="tab-staff" class="tabpage hidden">
+      <div class="two-col">
+        <div class="panel">
+          <h2>Staff members</h2>
+          <table class="tbl" id="staff-table">
+            <thead><tr><th>Name</th><th>Device PIN</th><th>Department</th><th>Status</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="panel">
+          <h2 id="staff-form-title">Add staff</h2>
+          <input type="hidden" id="staff-id">
+          <label>Name<input id="staff-name" placeholder="e.g. Ayesha Khan"></label>
+          <label>Device PIN (the number on the device)<input id="staff-pin" placeholder="e.g. 12" inputmode="numeric"></label>
+          <label>Device serial / reader label <span class="muted small">(optional — only needed when 2+ devices share PIN numbers; copy it from Settings → Device, e.g. LAN-192.168.100.111)</span><input id="staff-device" placeholder="Leave blank for a single device"></label>
+          <label>Department<input id="staff-dept" placeholder="e.g. Teaching"></label>
+          <div class="row">
+            <button class="btn primary" id="staff-save">Save</button>
+            <button class="btn ghost hidden" id="staff-cancel">Cancel</button>
+          </div>
+          <p class="muted small">Tip: enroll the fingerprint on the K40 first, note the user number it shows — that number is the Device PIN. Assigning a PIN here also links any past punches from it.</p>
+        </div>
+      </div>
+      <div class="panel warn" id="unmapped-all-panel">
+        <h2>⚠ Punches from unknown PINs</h2>
+        <p class="muted small">Fingerprints enrolled directly on the device that no staff member owns yet.</p>
+        <table class="tbl" id="unmapped-table">
+          <thead><tr><th>PIN</th><th>Punches</th><th>First seen</th><th>Last seen</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="tab-settings" class="tabpage hidden">
+      <div class="two-col">
+        <div class="panel">
+          <h2>Shift &amp; institute</h2>
+          <label>Institute name<input id="set-institute"></label>
+          <div class="row">
+            <label>Shift start<input id="set-start" type="time"></label>
+            <label>Shift end<input id="set-end" type="time"></label>
+          </div>
+          <div class="row">
+            <label>Late grace (minutes)<input id="set-grace" type="number" min="0" max="120"></label>
+            <label>Weekly off
+              <select id="set-weeklyoff">
+                <option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option>
+              </select>
+            </label>
+          </div>
+          <div class="row">
+            <label>New admin password (leave blank to keep)<input id="set-pass" type="password" autocomplete="new-password"></label>
+          </div>
+          <button class="btn primary" id="settings-save">Save settings</button>
+          <p class="muted small">First punch of the day counts as check-in, last punch as check-out. Late = arrival after shift start + grace. Early leave = last punch before shift end.</p>
+        </div>
+        <div class="panel">
+          <h2>Holidays</h2>
+          <div class="row">
+            <input type="date" id="hol-date">
+            <input id="hol-name" placeholder="Holiday name">
+            <button class="btn primary" id="hol-add">Add</button>
+          </div>
+          <table class="tbl" id="hol-table">
+            <thead><tr><th>Date</th><th>Name</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Device connection</h2>
+        <p class="muted">Point the K40 at this server — on the device: <b>Menu → COMM → Cloud Server Setting</b>, Server Mode <b>ADMS</b>, Server Address <b><span id="srv-addr">this server's address</span></b>, HTTPS <b>Off</b>.</p>
+        <p class="muted small">No ADMS menu on your K40? Use the LAN pull agent instead — it reads the device over the office network and forwards punches here. Ingest key: <code id="ingest-key"></code></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot muted small">ZK Attendance · data stays on your own server</footer>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
